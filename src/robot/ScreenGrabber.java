@@ -1,26 +1,28 @@
 package robot;
 
+import image.ImageDiff;
+import image.ImageDiffer;
+
 import java.awt.Dimension;
 import java.awt.Rectangle;
 import java.awt.Robot;
 import java.awt.Toolkit;
 import java.awt.image.BufferedImage;
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 
-import javax.imageio.ImageIO;
+import window.ScreenCaptureDisplay;
 
 import common.ControlException;
 import common.ServiceLocator;
-import common.intfce.ClientDisplay;
 import common.intfce.Grabber;
 import common.message.Message;
+
+import connection.Peer;
 
 final class ScreenGrabber implements Grabber
 {
 	private Rectangle _captureRegion;
-	private String _format = "png";
 
 	ScreenGrabber()
 	{
@@ -49,74 +51,58 @@ final class ScreenGrabber implements Grabber
 	@Override
 	public Message grab()
 	{
-		final byte[] imageBytes;
-		BufferedImage screen;
-		try (ByteArrayOutputStream outStream = new ByteArrayOutputStream();)
-		{
-			screen = getScreen();
-			if (screen == null)
-			{
-				return null;
-			}
-			ImageIO.write(screen, _format, outStream);
-			outStream.close();
-			imageBytes = outStream.toByteArray();
-		} catch (IOException e)
-		{
-			System.err.println("Unable to grab image:");
-			e.printStackTrace();
-			return null;
-		}
-		return new ScreenControlMessage(imageBytes, screen.getWidth(), screen.getHeight());
+		BufferedImage screen = getScreen();
+		
+		ImageDiffer differ = null;
+		ImageDiff diff = differ.getDiff(screen);
+		
+		return new ScreenControlMessage(diff, ServiceLocator.getLocalUser());
 	}
 
 	private static final class ScreenControlMessage implements Message
 	{
-		private static final long serialVersionUID = 1L;
+		private final ImageDiff _diff;
+		private final Peer _peer;
 
-		private final byte[] _image;
-		private final int _width;
-		private final int _height;
-
-		private ScreenControlMessage(byte[] imageBytes, int width, int height)
+		private ScreenControlMessage(ImageDiff diff, Peer peer)
 		{
-			_image = imageBytes;
-			_width = width;
-			_height = height;
+			_diff = diff;
+			_peer = peer;
 		}
 
 		@Override
 		public void performAction() throws ControlException
 		{
-			ClientDisplay display = ServiceLocator.getClientDisplay();
+			ScreenCaptureDisplay display = ServiceLocator.getClientDisplay(_peer);
 			if (display == null)
 			{
+				// need to create a new one...
 				throw new ControlException("No display to display screen capture!");
 			}
-
-			BufferedImage screen;
-			try
-			{
-				screen = ImageIO.read(ImageIO.createImageInputStream(new ByteArrayInputStream(_image)));
-			} catch (IOException e)
-			{
-				e.printStackTrace();
-				throw new ControlException("Unable to read image!", e);
-			}
-
-			display.display(screen);
+			display.updateDisplay(_diff);
 		}
 
-		public String toString()
+		@Override
+		public MessageType getUniqueType()
 		{
-			return "Image message with width = " + _width + ", height = " + _height;
+			return MessageType.SCREEN_UPDATE;
+		}
+
+		@Override
+		public void readFrom(InputStream in)
+		{
+		}
+
+		@Override
+		public void writeTo(OutputStream out)
+		{
+			
 		}
 	}
 
 	@Override
 	public void clearCache()
 	{
-		// TODO Auto-generated method stub
 		
 	}
 }

@@ -9,6 +9,8 @@ public final class Peer implements Serializable
 {
 	private static final long serialVersionUID = 1L;
 	
+	private final String _name = "" + System.nanoTime();
+	
 	private final String _ip;
 	private final int _port;
 	

@@ -42,7 +42,7 @@ public class PeerMonitor extends TimerTask
 				ServerHandler serverThread = ServiceLocator.getServerThread();
 				if (serverThread == null)
 				{
-					System.err.println("No server error!");
+					System.err.println("No server!");
 					return;
 				}
 				serverThread.openConnection(peer.open());

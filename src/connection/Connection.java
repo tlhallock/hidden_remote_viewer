@@ -1,8 +1,8 @@
 package connection;
 
 import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.Socket;
 import java.util.HashSet;
 
@@ -13,13 +13,14 @@ import common.intfce.Grabber;
 import common.intfce.Grabber.GrabberType;
 import common.message.CloseMessage;
 import common.message.Message;
+import common.message.MessageDriver;
 
 public class Connection
 {
 	private final Socket _socket;
 
-	private final ObjectInputStream _in;
-	private final ObjectOutputStream _out;
+	private final InputStream _in;
+	private final OutputStream _out;
 	
 	private final Peer _endPoint;
 
@@ -31,8 +32,8 @@ public class Connection
 	{
 		_socket = socket;
 
-		_in = new ObjectInputStream(socket.getInputStream());
-		_out = new ObjectOutputStream(socket.getOutputStream());
+		_in = socket.getInputStream();
+		_out = socket.getOutputStream();
 		
 		_endPoint = new Peer(_socket.getInetAddress().getHostAddress(), _socket.getPort());
 		
@@ -72,7 +73,7 @@ public class Connection
 		Message msg = grabber.grab();
 		try
 		{
-			_out.writeObject(msg);
+			MessageDriver.writeMessage(msg, _out);
 		} catch (IOException e)
 		{
 			System.err.println("Unable to send control message! terminating connection.");
@@ -144,27 +145,17 @@ public class Connection
 
 	private boolean handleNextMessage()
 	{
-		final Object readObject;
+		final Message message;
 		try
 		{
-			readObject = _in.readObject();
-		} catch (ClassNotFoundException | IOException e)
+			message = MessageDriver.readMessage(_in);
+		} catch (IOException e)
 		{
 			System.err.println("Unable to read message. Terminating connection");
 			e.printStackTrace();
 			return false;
 		}
 
-		if (!(readObject instanceof Message))
-		{
-			System.err.println("Received invalid object from server:");
-			System.err.println(readObject.getClass().getName());
-			System.err.println(readObject);
-			
-			return true;
-		}
-
-		Message message = (Message) readObject;
 		System.out.println("Received message: " + message);
 
 		try

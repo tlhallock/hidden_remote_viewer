@@ -5,27 +5,28 @@ import java.util.HashMap;
 import java.util.Timer;
 
 import robot.GrabberDriver;
+import window.ScreenCaptureDisplay;
 
-import common.intfce.ClientDisplay;
 import common.intfce.Grabber;
 import common.intfce.Grabber.GrabberType;
 
 import connection.ConnectionRegistry;
+import connection.Peer;
 import connection.ServerHandler;
 import driver.Settings;
 
 public final class ServiceLocator
 {
-	private static ClientDisplay _display = null;
+	private static final HashMap<Peer, ScreenCaptureDisplay> _displays = new HashMap<>();
 
-	public static void setClientDisplay(ClientDisplay display)
+	public static void setClientDisplay(Peer peer, ScreenCaptureDisplay display)
 	{
-		_display = display;
+		_displays.put(peer, display);
 	}
 
-	public static ClientDisplay getClientDisplay()
+	public static ScreenCaptureDisplay getClientDisplay(Peer peer)
 	{
-		return _display;
+		return _displays.get(peer);
 	}
 
 	private static ServerHandler _serverThread = null;
@@ -110,5 +111,17 @@ public final class ServiceLocator
 	public static GrabberDriver getGrabberDriver()
 	{
 		return _driver;
+	}
+
+	private static Peer _localUser;
+
+	public static Peer getLocalUser()
+	{
+		return _localUser;
+	}
+
+	public static void setLocalUser(Peer peer)
+	{
+		_localUser = peer;
 	}
 }

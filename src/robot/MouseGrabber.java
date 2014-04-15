@@ -3,6 +3,8 @@ package robot;
 import java.awt.MouseInfo;
 import java.awt.Point;
 import java.awt.Robot;
+import java.io.InputStream;
+import java.io.OutputStream;
 
 import common.ControlException;
 import common.GrabException;
@@ -36,8 +38,6 @@ final class MouseGrabber implements Grabber
 
 	private static final class MouseMover implements Message
 	{
-		private static final long serialVersionUID = 1L;
-
 		private final Point _delta;
 
 		private MouseMover(Point delta)
@@ -56,6 +56,24 @@ final class MouseGrabber implements Grabber
 
 			Point prevLocation = MouseInfo.getPointerInfo().getLocation();
 			robot.mouseMove(prevLocation.x + _delta.x, prevLocation.y + _delta.y);
+		}
+
+		@Override
+		public MessageType getUniqueType()
+		{
+			return MessageType.MOUSE_UPDATE;
+		}
+
+		@Override
+		public void readFrom(InputStream in)
+		{
+			
+		}
+
+		@Override
+		public void writeTo(OutputStream out)
+		{
+			
 		}
 	}
 
