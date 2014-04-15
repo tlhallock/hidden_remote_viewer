@@ -1,22 +1,44 @@
 package robot;
 
-import java.io.IOException;
-import java.util.Iterator;
 import java.util.Timer;
 import java.util.TimerTask;
 
+
 import common.GrabException;
 import common.ServiceLocator;
-import common.intfce.ClientThread;
 import common.intfce.Grabber;
-import common.intfce.ServerConnection;
-import common.message.ControlMessage;
+import common.intfce.Grabber.GrabberType;
+import connection.Connection;
+import connection.ConnectionRegistry;
+import connection.Peer;
 
 public class GrabberDriver
 {
-	private static void initializeGrabber(final Grabber grabber)
+	private static Grabber newGrabber(GrabberType id)
 	{
-		String id = grabber.getId();
+		switch(id)
+		{
+		case KEYBOARD_GRABBER:
+			return new KeyboardGrabber();
+		case MOUSE_GRABBER:
+			return new MouseGrabber();
+		case SCREEN_GRABBER:
+			return new ScreenGrabber();
+			default:
+				System.err.println("Unkown grabber: " + id);
+				return null;
+		}
+	}
+	
+	private static void initializeGrabber(GrabberType id)
+	{
+		Grabber oldGrabber = ServiceLocator.getGrabber(id);
+		if (oldGrabber != null)
+		{
+			return;
+		}
+		
+		final Grabber grabber = newGrabber(id);
 		ServiceLocator.setGrabber(id, grabber);
 
 		Timer timer = new Timer();
@@ -29,18 +51,12 @@ public class GrabberDriver
 			@Override
 			public void run()
 			{
-				if (ServiceLocator.isServer())
-				{
-					applyGrabberToServerConnections(grabber);
-				} else
-				{
-					applyGrabberToClientConnection(grabber);
-				}
+				applyGrabber(grabber);
 			}
 		}, timeout, timeout);
 	}
 
-	private static void destroyGrabber(final String id)
+	private static void destroyGrabber(final GrabberType id)
 	{
 		Grabber grabber = ServiceLocator.getGrabber(id);
 		if (grabber == null)
@@ -54,96 +70,72 @@ public class GrabberDriver
 		if (timer != null)
 		{
 			timer.cancel();
-			ServiceLocator.setTimer(grabber.getId(), null);
+			ServiceLocator.setTimer(id, null);
 		}
 	}
 
-	private static void applyGrabberToClientConnection(Grabber grabber)
+	private static void applyGrabber(Grabber grabber)
 	{
-		ClientThread clientThread = ServiceLocator.getClientThread();
-		if (clientThread == null)
+		ConnectionRegistry connectionRegistry = ServiceLocator.getConnectionRegistry();
+		if (connectionRegistry == null)
 		{
-			System.err.println("No client thread for " + grabber + "!!!");
+			System.err.println("No connection registry");
 			return;
 		}
+
 		try
 		{
-			clientThread.sendRequest(grabber.grab());
-		} catch (IOException | GrabException e)
+			connectionRegistry.apply(grabber);
+		} catch (GrabException e)
 		{
-			System.err.println("Unable to send request from " + grabber);
+			System.err.println("Unable to grab!!");
 			e.printStackTrace();
 		}
+		
+		grabber.clearCache();
 	}
-
-	private static void applyGrabberToServerConnections(Grabber grabber)
+	
+	public void removeGrabber(GrabberType id, Peer peer)
 	{
-		ControlMessage grab = null;
-
-		Iterator<String> targets = ServiceLocator.getTargets();
-		while (targets.hasNext())
+		ConnectionRegistry connectionRegistry = ServiceLocator.getConnectionRegistry();
+		if (connectionRegistry == null)
 		{
-			String target = targets.next();
-			ServerConnection serverConnection = ServiceLocator.getServerConnection(target);
-			if (serverConnection == null)
-			{
-				continue;
-			}
-
-			if (grab == null)
-			{
-				try
-				{
-					grab = grabber.grab();
-				} catch (GrabException e)
-				{
-					System.err.println("Unable to grab:");
-					e.printStackTrace();
-					return;
-				}
-
-				if (grab == null)
-				{
-					return;
-				}
-			}
-
-			try
-			{
-				serverConnection.applyMessage(grab);
-			} catch (IOException e)
-			{
-				System.err.println("Unable to write message to " + target + "!");
-				e.printStackTrace();
-			}
-		}
-	}
-
-	public static void initializeScreenGrabber()
-	{
-		if (ServiceLocator.getGrabber(ScreenGrabber.ID) != null)
-		{
+			System.err.println("No connection registry!!");
 			return;
 		}
-		initializeGrabber(new ScreenGrabber());
-	}
 
-	public static void destroyScreenGrabber()
-	{
-		destroyGrabber(ScreenGrabber.ID);
-	}
-
-	public static void initializeMouseGrabber()
-	{
-		if (ServiceLocator.getGrabber(MouseGrabber.ID) != null)
+		Connection connection = connectionRegistry.getConnection(peer);
+		if (connection == null)
 		{
+			System.err.println("Not connected to " + peer);
 			return;
 		}
-		initializeGrabber(new MouseGrabber());
+		
+		connection.removeGrabber(id);
+		
+		if (Math.random() < 0 /*no more peers have this grabber*/)
+		{
+			destroyGrabber(id);
+		}
 	}
 
-	public static void destroyMouseGrabber()
+	public void applyGrabber(GrabberType grabberId, Peer peer)
 	{
-		destroyGrabber(MouseGrabber.ID);
+		ConnectionRegistry connectionRegistry = ServiceLocator.getConnectionRegistry();
+		if (connectionRegistry == null)
+		{
+			System.err.println("No connection registry!!");
+			return;
+		}
+
+		Connection connection = connectionRegistry.getConnection(peer);
+		if (connection == null)
+		{
+			System.err.println("Not connected to " + peer);
+			return;
+		}
+		
+		GrabberDriver.initializeGrabber(grabberId);
+		connection.addGrabber(grabberId);
 	}
 }

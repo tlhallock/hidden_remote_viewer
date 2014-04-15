@@ -3,29 +3,28 @@ package driver;
 import java.awt.AWTException;
 import java.awt.Robot;
 import java.io.IOException;
+import java.net.ServerSocket;
+import java.util.Timer;
 
-import server.ServerDriver;
-import client.ClientDriver;
 
 import common.ServiceLocator;
+import connection.ConnectionRegistry;
+import connection.PeerMonitor;
+import connection.ServerHandler;
 
 public class RemoteViewer
 {
 	public static void main(String[] args) throws AWTException, IOException
 	{
-		boolean doServer = false;
-
 		ServiceLocator.setRobot(new Robot());
 		ServiceLocator.setSettings(new Settings());
 
-		ServiceLocator.setIsServer(doServer);
+		ServiceLocator.setConnectionRegistry(new ConnectionRegistry());
 
-		if (doServer)
-		{
-			ServerDriver.initialize();
-		} else
-		{
-			ClientDriver.initialize();
-		}
+		ServerSocket serverSocket = new ServerSocket(2828);
+		ServiceLocator.setServerThread(new ServerHandler(serverSocket));
+
+		Timer timer = new Timer();
+		timer.scheduleAtFixedRate(new PeerMonitor(), 1000, 1000);
 	}
 }

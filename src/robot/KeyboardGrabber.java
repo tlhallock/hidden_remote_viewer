@@ -2,21 +2,26 @@ package robot;
 
 import common.GrabException;
 import common.intfce.Grabber;
-import common.message.ControlMessage;
+import common.message.Message;
 
 class KeyboardGrabber implements Grabber
 {
-	static String ID = "keyboard.grabber";
+	@Override
+	public GrabberType getType()
+	{
+		return GrabberType.KEYBOARD_GRABBER;
+	}
 
 	@Override
-	public String getId()
+	public Message grab() throws GrabException
 	{
 		return null;
 	}
 
 	@Override
-	public ControlMessage grab() throws GrabException
+	public void clearCache()
 	{
-		return null;
+		// TODO Auto-generated method stub
+		
 	}
 }

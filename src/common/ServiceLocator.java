@@ -2,16 +2,16 @@ package common;
 
 import java.awt.Robot;
 import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.Set;
 import java.util.Timer;
 
-import common.intfce.ClientDisplay;
-import common.intfce.ClientThread;
-import common.intfce.Grabber;
-import common.intfce.ServerConnection;
+import robot.GrabberDriver;
 
+import common.intfce.ClientDisplay;
+import common.intfce.Grabber;
+import common.intfce.Grabber.GrabberType;
+
+import connection.ConnectionRegistry;
+import connection.ServerHandler;
 import driver.Settings;
 
 public final class ServiceLocator
@@ -28,52 +28,28 @@ public final class ServiceLocator
 		return _display;
 	}
 
-	private static ClientThread _clientThread = null;
+	private static ServerHandler _serverThread = null;
 
-	public static void setClientThread(ClientThread clientThread)
-	{
-		_clientThread = clientThread;
-	}
-
-	public static ClientThread getClientThread()
-	{
-		return _clientThread;
-	}
-
-	private static Thread _serverThread = null;
-
-	public static void setServerThread(Thread serverThread)
+	public static void setServerThread(ServerHandler serverThread)
 	{
 		_serverThread = serverThread;
 	}
 
-	public static Thread getServerThread()
+	public static ServerHandler getServerThread()
 	{
 		return _serverThread;
 	}
 
-	private static HashMap<String, Timer> _timers = new HashMap<>();
+	private static HashMap<GrabberType, Timer> _timers = new HashMap<>();
 
-	public static void setTimer(String id, Timer timer)
+	public static void setTimer(GrabberType id, Timer timer)
 	{
-		_timers.put("timers." + id, timer);
+		_timers.put(id, timer);
 	}
 
-	public static Timer getTimer(String id)
+	public static Timer getTimer(GrabberType id)
 	{
-		return _timers.get("timers." + id);
-	}
-
-	private static HashMap<String, ServerConnection> _serverConnection = new HashMap<>();
-
-	public static void setServerConnection(String id, ServerConnection connection)
-	{
-		_serverConnection.put("server.connection" + id, connection);
-	}
-
-	public static ServerConnection getServerConnection(String id)
-	{
-		return _serverConnection.get("server.connection" + id);
+		return _timers.get(id);
 	}
 
 	private static Robot _robot;
@@ -88,18 +64,6 @@ public final class ServiceLocator
 		return _robot;
 	}
 
-	private static Set<String> _targets = new HashSet<>();
-
-	public static void addTarget(String address)
-	{
-		_targets.add(address);
-	}
-
-	public static Iterator<String> getTargets()
-	{
-		return _targets.iterator();
-	}
-
 	private static Settings _settings;
 
 	public static void setSettings(Settings settings)
@@ -112,27 +76,39 @@ public final class ServiceLocator
 		return _settings;
 	}
 
-	private static HashMap<String, Grabber> _grabbers = new HashMap<>();
+	private static HashMap<GrabberType, Grabber> _grabbers = new HashMap<>();
 
-	public static void setGrabber(String id, Grabber grabber)
+	public static void setGrabber(GrabberType id, Grabber grabber)
 	{
-		_grabbers.put("grabber." + id, grabber);
+		_grabbers.put(id, grabber);
 	}
 
-	public static Grabber getGrabber(String id)
+	public static Grabber getGrabber(GrabberType type)
 	{
-		return _grabbers.get(id);
+		return _grabbers.get(type);
 	}
 
-	private static boolean _isServer;
+	private static ConnectionRegistry _connections;
 
-	public static void setIsServer(boolean isServer)
+	public static void setConnectionRegistry(ConnectionRegistry connections)
 	{
-		_isServer = isServer;
+		_connections = connections;
 	}
 
-	public static boolean isServer()
+	public static ConnectionRegistry getConnectionRegistry()
 	{
-		return _isServer;
+		return _connections;
+	}
+
+	private static GrabberDriver _driver;
+
+	public static void setGrabber(GrabberDriver driver)
+	{
+		_driver = driver;
+	}
+
+	public static GrabberDriver getGrabberDriver()
+	{
+		return _driver;
 	}
 }

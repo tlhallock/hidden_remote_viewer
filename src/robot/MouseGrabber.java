@@ -8,22 +8,20 @@ import common.ControlException;
 import common.GrabException;
 import common.ServiceLocator;
 import common.intfce.Grabber;
-import common.message.ControlMessage;
+import common.message.Message;
 
 final class MouseGrabber implements Grabber
 {
-	static final String ID = "mouse.grabber";
-
 	private Point prevPoint = null;
 
 	@Override
-	public String getId()
+	public GrabberType getType()
 	{
-		return ID;
+		return GrabberType.MOUSE_GRABBER;
 	}
 
 	@Override
-	public ControlMessage grab() throws GrabException
+	public Message grab() throws GrabException
 	{
 		Point newPoint = MouseInfo.getPointerInfo().getLocation();
 		if (prevPoint == null)
@@ -36,7 +34,7 @@ final class MouseGrabber implements Grabber
 		}
 	}
 
-	private static final class MouseMover implements ControlMessage
+	private static final class MouseMover implements Message
 	{
 		private static final long serialVersionUID = 1L;
 
@@ -59,5 +57,12 @@ final class MouseGrabber implements Grabber
 			Point prevLocation = MouseInfo.getPointerInfo().getLocation();
 			robot.mouseMove(prevLocation.x + _delta.x, prevLocation.y + _delta.y);
 		}
+	}
+
+	@Override
+	public void clearCache()
+	{
+		// TODO Auto-generated method stub
+		
 	}
 }

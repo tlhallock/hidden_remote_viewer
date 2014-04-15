@@ -15,12 +15,10 @@ import common.ControlException;
 import common.ServiceLocator;
 import common.intfce.ClientDisplay;
 import common.intfce.Grabber;
-import common.message.ControlMessage;
+import common.message.Message;
 
 final class ScreenGrabber implements Grabber
 {
-	static final String ID = "screen_grabber";
-
 	private Rectangle _captureRegion;
 	private String _format = "png";
 
@@ -32,9 +30,9 @@ final class ScreenGrabber implements Grabber
 	}
 
 	@Override
-	public String getId()
+	public GrabberType getType()
 	{
-		return ID;
+		return GrabberType.SCREEN_GRABBER;
 	}
 
 	private final BufferedImage getScreen()
@@ -49,7 +47,7 @@ final class ScreenGrabber implements Grabber
 	}
 
 	@Override
-	public ControlMessage grab()
+	public Message grab()
 	{
 		final byte[] imageBytes;
 		BufferedImage screen;
@@ -72,7 +70,7 @@ final class ScreenGrabber implements Grabber
 		return new ScreenControlMessage(imageBytes, screen.getWidth(), screen.getHeight());
 	}
 
-	private static final class ScreenControlMessage implements ControlMessage
+	private static final class ScreenControlMessage implements Message
 	{
 		private static final long serialVersionUID = 1L;
 
@@ -113,5 +111,12 @@ final class ScreenGrabber implements Grabber
 		{
 			return "Image message with width = " + _width + ", height = " + _height;
 		}
+	}
+
+	@Override
+	public void clearCache()
+	{
+		// TODO Auto-generated method stub
+		
 	}
 }
